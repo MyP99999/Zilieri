@@ -38,10 +38,9 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(request -> request.requestMatchers("/api/v1/auth/**")
-                        .permitAll()
-                        .requestMatchers("/api/v1/admin").hasAnyAuthority(Role.ADMIN.name())
-                        .requestMatchers("/api/v1/user").hasAnyAuthority(Role.USER.name())
+                .authorizeHttpRequests(request -> request.requestMatchers("/ws/**", "/app/**", "api/auth/**").permitAll()
+//                        .requestMatchers("/api/v1/admin").hasAnyAuthority(Role.ADMIN.name())
+//                        .requestMatchers("/api/v1/user").hasAnyAuthority(Role.USER.name())
                         .anyRequest().authenticated())
 
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -57,14 +56,13 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://mypimagetogpt.netlify.app")); // Specify the allowed origins
-
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://mypimagetogpt.netlify.app")); // Same allowed origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply this configuration to all endpoints
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 

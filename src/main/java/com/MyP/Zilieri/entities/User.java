@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class User implements UserDetails {
 
     @Id
@@ -29,6 +29,16 @@ public class User implements UserDetails {
     private String email;
 
     private String password;
+
+    private String lastName;
+
+    private String firstName;
+
+    private String phoneNumber;
+
+    private String address;
+
+    private String profilePicture;
 
     private Role role;
 

@@ -19,11 +19,5 @@ public class JwtAuthenticationResponse {
     public static JwtAuthenticationResponse error(String error) {
         return JwtAuthenticationResponse.builder().error(error).build();
     }
-    public String getRefreshToken() {
-        return refreshToken;
-    }
 
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-    }
 }
