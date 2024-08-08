@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/job-postings")
 @RequiredArgsConstructor
-public class JobPostingController {
+public class JobPostController {
 
     private final JobPostService jobPostService;
 

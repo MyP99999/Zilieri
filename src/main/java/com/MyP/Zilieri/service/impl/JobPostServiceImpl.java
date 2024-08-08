@@ -20,7 +20,7 @@ public class JobPostServiceImpl implements JobPostService {
     }
 
     public List<JobPost> findJobPostsByEmployerId(Integer employerId) {
-        return jobPostRepository.findByEmployerId(employerId);
+        return jobPostRepository.findByEmployerEmployerId(employerId);
     }
 
     public List<JobPost> findJobPostsByStatus(JobStatus status) {
