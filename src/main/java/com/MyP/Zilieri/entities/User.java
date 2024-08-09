@@ -62,36 +62,12 @@ public class User implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
-
     public boolean isExternalAuth() {
         return isExternalAuth;
     }
 
     public void setExternalAuth(boolean externalAuth) {
         isExternalAuth = externalAuth;
-    }
-
-    public boolean isActive() {
-        return isActive;
     }
 
     public void setActive(boolean active) {

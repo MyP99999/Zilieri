@@ -16,7 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +29,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -71,26 +74,53 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setRole(Role.USER);
 
         user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+        user.setActivationToken(UUID.randomUUID().toString());
+        user.setActive(false);
 
+
+        String activationLink = "http://localhost:8080/activate?token=" + user.getActivationToken();
+        emailService.sendEmail(
+                user.getEmail(),
+                "Registration Confirmation",
+                "Thank you for registering. Please click on the below link to activate your account: " + activationLink
+        );
         return userRepository.save(user);
     }
 
-    public JwtAuthenticationResponse signin(SigninRequest signinRequest){
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signinRequest.getEmail(), signinRequest.getPassword()));
+    public JwtAuthenticationResponse signin(SigninRequest signinRequest) {
+        try {
+            // Load the user details from the database
+            User user = userRepository.findByEmail(signinRequest.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User with email " + signinRequest.getEmail() + " does not exist."));
 
-        var user = userRepository.findByEmail(signinRequest.getEmail()).orElseThrow(() -> new IllegalArgumentException("Invalid Email or Password!"));
+            // Check if the account is active
+            if (!user.isActive()) {
+                throw new AuthenticationException("Account is not active. Please activate your account.") {};
+            }
 
-        var jwt = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(new HashMap<>(), user);
+            // Authenticate the user
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signinRequest.getEmail(), signinRequest.getPassword()));
 
-        JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
+            // Generate JWT and Refresh Token
+            UserDetails userDetails = userService.userDetailsService().loadUserByUsername(signinRequest.getEmail());
+            var jwt = jwtService.generateToken(userDetails);
+            var refreshToken = jwtService.generateRefreshToken(new HashMap<>(), userDetails);
 
-        jwtAuthenticationResponse.setToken(jwt);
-        jwtAuthenticationResponse.setRefreshToken(refreshToken);
+            // Return the response
+            JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
+            jwtAuthenticationResponse.setToken(jwt);
+            jwtAuthenticationResponse.setRefreshToken(refreshToken);
 
-        return jwtAuthenticationResponse;
-
+            return jwtAuthenticationResponse;
+        } catch (UsernameNotFoundException e) {
+            throw new UsernameNotFoundException("User with email " + signinRequest.getEmail() + " does not exist.");
+        } catch (BadCredentialsException e) {
+            throw new BadCredentialsException("Invalid email or password.");
+        } catch (AuthenticationException e) {
+            throw new AuthenticationException("Account is not active. Please activate your account.") {};
+        }
     }
+
 
     public JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest){
         String userEmail = jwtService.extractUserName(refreshTokenRequest.getToken());
@@ -160,6 +190,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             GoogleUser googleUser = fetchGoogleUserDetails(accessToken);
 
             User user = userService.findOrCreateUser(googleUser.getEmail(), googleUser.getEmail().split("@")[0], googleUser.isExternalAuth());
+            user.setActive(true);
 
             UserDetails userDetails = userService.userDetailsService().loadUserByUsername(user.getEmail());
 
